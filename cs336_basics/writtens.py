@@ -1,0 +1,1 @@
+print(chr(0) + "hello world" + chr(0) + "hi" + "\n") 
