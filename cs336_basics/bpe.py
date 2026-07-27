@@ -1,5 +1,7 @@
 import regex as re
+import multiprocessing as mp
 from collections import defaultdict 
+from cs336_basics.pretokenization_example import find_chunk_boundaries
 
 def _get_pretokenized_vocab(
     text: str, 
@@ -99,16 +101,30 @@ def train_bpe(
   Trains a Byte Pair Encoding tokenizer
   """
 
+  num_cores = mp.cpu_count()
+
   # Open file/corpus
-  try:
-    with open(input_path, "r") as f:
-      text = f.read()
-  except FileNotFoundError:
-    print(f"No file at {input_path}.")
-    raise FileNotFoundError
+  with open(input_path, "rb") as f:
+    # Find the byte boundaries
+    boundaries = find_chunk_boundaries(f, num_cores, b"<|endoftext|>")
+    
+    # Extract the string chunks using those boundaries
+    chunks_special = []
+    for start, end in zip(boundaries[:-1], boundaries[1:]):
+      f.seek(start)
+      chunk_str = f.read(end - start).decode("utf-8", errors="ignore")
+      chunks_special.append((chunk_str, special_tokens))
 
   # Initialize vocab and counts
-  pretokenized_vocab = _get_pretokenized_vocab(text, special_tokens)
+  with mp.Pool(processes = num_cores) as pool:
+    vocabperchunk = pool.starmap(_get_pretokenized_vocab, chunks_special)
+
+  pretokenized_vocab = {}
+  for minivocab in vocabperchunk:
+    for word, count in minivocab.items():
+       pretokenized_vocab[word] = pretokenized_vocab.get(word, 0) + count
+     
+
   paircounts, vocabmap = _counts_and_vocabmap(pretokenized_vocab)
 
   currsize = 256
