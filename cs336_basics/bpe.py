@@ -4,13 +4,19 @@ from collections import defaultdict
 from cs336_basics.pretokenization_example import find_chunk_boundaries
 
 def _get_pretokenized_vocab(
-    text: str, 
+    input_path: str, 
+    start: int, 
+    end: int, 
     special_tokens: list[str]
 ) -> dict[tuple[bytes, ...], int]:
     """
     Uses given regex pattern to split the corpus into a pretokenized vocab to help with pair counting later. Also removes the special tokens via splitting.
 
     """
+
+    with open(input_path, "rb") as f:
+        f.seek(start)
+        text = f.read(end - start).decode("utf-8", errors="ignore")
 
     PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
     specials = f"({'|'.join([re.escape(token) for token in special_tokens])})"
@@ -101,23 +107,19 @@ def train_bpe(
   Trains a Byte Pair Encoding tokenizer
   """
 
-  num_cores = mp.cpu_count()
+  num_cores = 8
 
   # Open file/corpus
   with open(input_path, "rb") as f:
-    # Find the byte boundaries
     boundaries = find_chunk_boundaries(f, num_cores, b"<|endoftext|>")
-    
-    # Extract the string chunks using those boundaries
-    chunks_special = []
-    for start, end in zip(boundaries[:-1], boundaries[1:]):
-      f.seek(start)
-      chunk_str = f.read(end - start).decode("utf-8", errors="ignore")
-      chunks_special.append((chunk_str, special_tokens))
+
+  pool_args = []
+  for start, end in zip(boundaries[:-1], boundaries[1:]):
+    pool_args.append((input_path, start, end, special_tokens))
 
   # Initialize vocab and counts
   with mp.Pool(processes = num_cores) as pool:
-    vocabperchunk = pool.starmap(_get_pretokenized_vocab, chunks_special)
+    vocabperchunk = pool.starmap(_get_pretokenized_vocab, pool_args)
 
   pretokenized_vocab = {}
   for minivocab in vocabperchunk:
