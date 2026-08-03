@@ -66,6 +66,11 @@ class Tokenizer:
         res = []
         encodingdict = {}
         for t in regsplit:
+            # special token check
+            
+            if t in self.special_tokens:
+                res.append(vdict[t.encode("utf-8")])
+                continue
             if t in encodingdict:
                 res.extend(encodingdict[t])
                 continue

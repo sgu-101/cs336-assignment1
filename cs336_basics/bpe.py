@@ -112,7 +112,7 @@ def train_bpe(
     Trains a Byte Pair Encoding tokenizer
     """
 
-    num_cores = 8
+    num_cores = max(1, mp.cpu_count() - 4)
 
     # Open file/corpus
     with open(input_path, "rb") as f:
