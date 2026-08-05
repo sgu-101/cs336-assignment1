@@ -1,4 +1,5 @@
 import regex as re
+import time
 import multiprocessing as mp
 from collections import defaultdict
 from cs336_basics.pretokenization_example import find_chunk_boundaries
@@ -137,6 +138,7 @@ def train_bpe(
     vocab = {i: bytes([i]) for i in range(currsize)}
     merges = []
 
+    t0 = time.time()
     # Merge until desired vocab size
     while currsize < (vocab_size - len(special_tokens)):
         # no pairs to merge
@@ -164,8 +166,8 @@ def train_bpe(
 
         # update the counts and dict
         _apply_merge(bestpair, pretokenized_vocab, paircounts, vocabmap)
-        # if currsize % 200 == 0:
-        #   print(f"[{time.time()-t0:.0f}s] merges={currsize} unique_pairs={len(paircounts)} unique_words={len(pretokenized_vocab)}", flush=True)
+        if currsize % 200 == 0:
+            print(f"[{time.time()-t0:.0f}s] merges={currsize} unique_pairs={len(paircounts)} unique_words={len(pretokenized_vocab)}", flush=True)
 
     # add the special tokens
     for i in range(len(special_tokens)):

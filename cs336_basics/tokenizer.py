@@ -19,10 +19,10 @@ class Tokenizer:
     def from_files(cls, vocab_filepath: str, merges_filepath: str, special_tokens=None):
         vocab = {}
         merges = []
-        with open(vocab_filepath) as f:
+        with open(vocab_filepath, "rb") as f:
             vocab = pickle.load(f)
 
-        with open(merges_filepath) as f:
+        with open(merges_filepath, "rb") as f:
             merges = pickle.load(f)
 
         return cls(vocab, merges, special_tokens)
@@ -44,7 +44,9 @@ class Tokenizer:
                 res.append(m.group())
             return res
 
-        specials_pattern = f"({'|'.join([re.escape(token) for token in special_tokens])})"
+        # Sort special tokens by length, longest first
+        sorted_specials = sorted(special_tokens, key=len, reverse=True)
+        specials_pattern = f"({'|'.join([re.escape(token) for token in sorted_specials])})"
         splitted = re.split(specials_pattern, text)
 
         for spl in splitted:
@@ -67,7 +69,6 @@ class Tokenizer:
         encodingdict = {}
         for t in regsplit:
             # special token check
-            
             if t in self.special_tokens:
                 res.append(vdict[t.encode("utf-8")])
                 continue
@@ -121,4 +122,4 @@ class Tokenizer:
         decodes a sequence of ids by joining all the byte representation first and then decoding it all at once
         """
         total = b"".join([self.vocab[num] for num in ids])
-        return total.decode("utf-8")
+        return total.decode("utf-8", errors='replace')
