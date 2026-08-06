@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import numpy as np
 import time
-from cs336_basics.tokenizer import Tokenizer # Adjust import as needed
+from cs336_basics.tokenizer.tokenizer import Tokenizer # Adjust import as needed
 
 # 1. The Worker Function (MUST be at the top level of the script)
 def _encode_chunk(args):

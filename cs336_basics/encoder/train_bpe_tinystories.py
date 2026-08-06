@@ -1,7 +1,7 @@
 import time
 import tracemalloc
 import pickle
-from cs336_basics.bpe import train_bpe
+from cs336_basics.encoder.bpe import train_bpe
 
 if __name__ == "__main__":
     tracemalloc.start()

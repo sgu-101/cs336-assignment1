@@ -2,7 +2,7 @@ import regex as re
 import time
 import multiprocessing as mp
 from collections import defaultdict
-from cs336_basics.pretokenization_example import find_chunk_boundaries
+from cs336_basics.encoder.pretokenization_example import find_chunk_boundaries
 
 
 def _get_pretokenized_vocab(

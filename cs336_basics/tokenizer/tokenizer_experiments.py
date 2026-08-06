@@ -1,4 +1,4 @@
-from tokenizer import Tokenizer
+from cs336_basics.tokenizer.tokenizer import Tokenizer
 import random
 import time
 import pickle
