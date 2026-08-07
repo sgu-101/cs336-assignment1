@@ -3,7 +3,7 @@ import time
 import multiprocessing as mp
 from collections import defaultdict
 from cs336_basics.encoder.pretokenization_example import find_chunk_boundaries
-
+import os
 
 def _get_pretokenized_vocab(
     input_path: str,
@@ -105,7 +105,7 @@ def _apply_merge(
 
 
 def train_bpe(
-    input_path: str,
+    input_path: str | os.PathLike,
     vocab_size: int,
     special_tokens: list[str]
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
@@ -145,7 +145,7 @@ def train_bpe(
         if len(paircounts) == 0:
             break
 
-        bestpair = tuple()
+        bestpair = (b"a", b"a")
         bestcount = 0
 
         # Prioritize lexicographically greater pair
