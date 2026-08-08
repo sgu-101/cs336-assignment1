@@ -104,3 +104,36 @@ def scaled_dot_product_attention(Q : torch.Tensor, K : torch.Tensor, V : torch.T
     inner.masked_fill_(~mask, value=-float('inf'))
 
   return einsum(softmax(inner, -1), V, "... q_len k_len, ... k_len d_v -> ... q_len d_v")
+
+class MultiheadSelfAttention(nn.Module):
+  def __init__(self, d_model, n_heads, isrope=False, max_seq_len=256, theta=0.01, device=None, dtype=None):
+    super().__init__()
+    self.d_k = d_model // n_heads
+    self.heads = n_heads
+    self.device = device
+
+    self.isrope = isrope
+    if isrope:
+      self.rope = RotaryPositionalEmbedding(theta=theta, d_k=self.d_k, max_seq_len=max_seq_len, device=self.device)
+
+    self.Q = Linear(d_model, d_model, device=device, dtype=dtype)
+    self.K = Linear(d_model, d_model, device=device, dtype=dtype)
+    self.V = Linear(d_model, d_model, device=device, dtype=dtype)
+
+    self.O = Linear(d_model, d_model, device=device, dtype=dtype)
+
+  def forward(self, x : torch.Tensor) -> torch.Tensor:
+    seqlen = x.shape[-2]
+    qi = rearrange(self.Q(x), "... seq_len (n_heads d_k) -> ... n_heads seq_len d_k", n_heads=self.heads)
+    ki = rearrange(self.K(x), "... seq_len (n_heads d_k) -> ... n_heads seq_len d_k", n_heads=self.heads)
+    vi = rearrange(self.V(x), "... seq_len (n_heads d_k) -> ... n_heads seq_len d_k", n_heads=self.heads)
+
+    if self.isrope:
+      positions = torch.arange(0, seqlen).expand(qi.shape[:-1])
+      qi = self.rope(qi, positions)
+      ki = self.rope(ki, positions)
+
+    mask = torch.tril(torch.ones(seqlen, seqlen, dtype=torch.bool, device=x.device), diagonal=0)
+    dotprod = scaled_dot_product_attention(qi, ki, vi, mask)
+    out = rearrange(dotprod, "... n_heads seq_len d_k -> ... seq_len (n_heads d_k)")
+    return self.O(out)
